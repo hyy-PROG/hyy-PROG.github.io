@@ -1,11 +1,353 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-    <title>我的网站</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HYY-PROG | 即将上线</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        #particles-js {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+        
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+        
+        .logo {
+            margin-bottom: 3rem;
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        .logo img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            background: linear-gradient(45deg, #8e2de2, #4a00e0);
+            padding: 10px;
+            box-shadow: 0 0 50px rgba(142, 45, 226, 0.5);
+        }
+        
+        .content {
+            background: rgba(15, 12, 41, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            padding: 3rem 2rem;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 800px;
+            width: 90%;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .content::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            z-index: -1;
+            animation: rotate 20s linear infinite;
+        }
+        
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(to right, #ff8a00, #da1b60);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px rgba(218, 27, 96, 0.5);
+            animation: glow 2s ease-in-out infinite alternate;
+            position: relative;
+        }
+        
+        .subtitle {
+            font-size: 1.8rem;
+            margin-bottom: 2rem;
+            color: #d0d0ff;
+            font-weight: 300;
+        }
+        
+        .highlight {
+            color: #ff8a00;
+            font-weight: 600;
+            text-shadow: 0 0 10px rgba(255, 138, 0, 0.5);
+        }
+        
+        .description {
+            font-size: 1.2rem;
+            line-height: 1.8;
+            margin-bottom: 3rem;
+            color: #b0b0ff;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .social-icons {
+            display: flex;
+            justify-content: center;
+            margin-top: 2rem;
+            gap: 1.5rem;
+        }
+        
+        .social-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .social-icon::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: 0.5s;
+        }
+        
+        .social-icon:hover::before {
+            left: 100%;
+        }
+        
+        .social-icon:hover {
+            transform: translateY(-5px);
+            background: linear-gradient(45deg, #8e2de2, #4a00e0);
+            box-shadow: 0 5px 15px rgba(142, 45, 226, 0.4);
+        }
+        
+        .copyright {
+            margin-top: 3rem;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.9rem;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .pulse {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background: #ff8a00;
+            border-radius: 50%;
+            margin: 0 5px;
+            vertical-align: middle;
+            animation: pulse 1.5s infinite;
+        }
+        
+        /* Animations */
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 10px rgba(218, 27, 96, 0.5);
+            }
+            to {
+                text-shadow: 0 0 20px rgba(218, 27, 96, 0.8), 0 0 30px rgba(218, 27, 96, 0.6);
+            }
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+            100% {
+                transform: translateY(0px);
+            }
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(0.8);
+                box-shadow: 0 0 0 0 rgba(255, 138, 0, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 15px rgba(255, 138, 0, 0);
+            }
+            100% {
+                transform: scale(0.8);
+                box-shadow: 0 0 0 0 rgba(255, 138, 0, 0);
+            }
+        }
+        
+        @keyframes rotate {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        
+        .floating-text {
+            position: absolute;
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.2);
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .subtitle {
+                font-size: 1.3rem;
+            }
+            
+            .description {
+                font-size: 1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .social-icons {
+                gap: 1rem;
+            }
+            
+            .social-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 1.2rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>网站建设中</h1>
-    <p>欢迎访问 hyy-PROG.github.io！</p>
-    <a href="https://hyy-1333784975.cos.ap-nanjing.myqcloud.com/hyyhtml.py">查看Python文件</a>
+    <!-- 粒子背景容器 -->
+    <div id="particles-js"></div>
+    
+    <!-- 浮动背景文字 -->
+    <div class="floating-text" style="top: 10%; left: 5%;">COMING SOON</div>
+    <div class="floating-text" style="top: 20%; right: 8%;">WEBSITE</div>
+    <div class="floating-text" style="top: 40%; left: 12%;">DEVELOPMENT</div>
+    <div class="floating-text" style="top: 70%; right: 15%;">HYY-PROG</div>
+    <div class="floating-text" style="top: 85%; left: 20%;">2025</div>
+    
+    <div class="container">
+        <div class="logo">
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/%3E%3C/svg%3E" alt="HYX-PROG Logo">
+        </div>
+        
+        <div class="content">
+            <h1>网站建设中</h1>
+            <p class="subtitle">即将为您呈现<span class="highlight">惊艳</span>的体验</p>
+            <p class="description">欢迎访问 <span class="highlight">hyy-PROG.github.io</span></p>
+        </div>
+        
+        <p class="copyright">© 2025 HYX-PROG. 保留所有权利 <span class="pulse"></span></p>
+    </div>
+    
+    <!-- 粒子背景脚本 -->
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script>
+        // 初始化粒子背景
+        particlesJS('particles-js', {
+            particles: {
+                number: { value: 100, density: { enable: true, value_area: 800 } },
+                color: { value: "#ffffff" },
+                shape: { type: "circle" },
+                opacity: { value: 0.3, random: true },
+                size: { value: 3, random: true },
+                line_linked: {
+                    enable: true,
+                    distance: 150,
+                    color: "#ffffff",
+                    opacity: 0.1,
+                    width: 1
+                },
+                move: {
+                    enable: true,
+                    speed: 2,
+                    direction: "none",
+                    random: true,
+                    straight: false,
+                    out_mode: "out",
+                    bounce: false
+                }
+            },
+            interactivity: {
+                detect_on: "canvas",
+                events: {
+                    onhover: { enable: true, mode: "repulse" },
+                    onclick: { enable: true, mode: "push" },
+                    resize: true
+                }
+            },
+            retina_detect: true
+        });
+        
+        // 创建浮动背景文字
+        const floatingTexts = document.querySelectorAll('.floating-text');
+        floatingTexts.forEach(text => {
+            // 随机旋转角度
+            const rotation = (Math.random() * 20) - 10;
+            text.style.transform = `rotate(${rotation}deg)`;
+            
+            // 随机动画延迟
+            text.style.animationDelay = `${Math.random() * 5}s`;
+        });
+    </script>
 </body>
 </html>
