@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PyCodePlay - 增强版Python在线编辑器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pyodide/0.23.4/pyodide.js"></script>
+    <style>
+        :root {
+            --primary: #6c63ff;
+            --secondary: #4a44b5;
+            --dark: #121212;
+            --darker: #0a0a0a;
+            --light: #f5f5f5;
+            --code-bg: #1e1e1e;
+            --success: #4ade80;
+            --warning: #facc15;
+            --error: #f87171;
+            --terminal-bg: #1a1a1a;
+            --purple-gradient: linear-gradient(135deg, var(--primary), var(--secondary));
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: var(--dark);
+            color: var(--light);
+            min-height: 100vh;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(108, 99, 255, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(74, 68, 181, 0.1) 0%, transparent 20%);
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            grid-template-rows: 70px 1fr 300px;
+            grid-template-areas: 
+                "header header"
+                "sidebar editor"
+                "sidebar terminal";
+            gap: 20px;
+            height: 100vh;
+        }
+        
+        /* 头部样式 */
+        header {
+            grid-area: header;
+            background: rgba(30, 30, 46, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo i {
+            font-size: 28px;
+            color: var(--primary);
+            background: rgba(108, 99, 255, 0.1);
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .logo h1 {
+            font-size: 24px;
+            font-weight: 700;
+            background: var(--purple-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .btn {
+            background: var(--purple-gradient);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(108, 99, 255, 0.3);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(108, 99, 255, 0.5);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-run {
+            background: linear-gradient(135deg, var(--success), #16a34a);
+            box-shadow: 0 4px 15px rgba(74, 222, 128, 0.3);
+        }
+        
+        .btn-run:hover {
+            box-shadow: 0 6px 20px rgba(74, 222, 128, 0.5);
+        }
+        
+        .btn-delete {
+            background: linear-gradient(135deg, var(--error), #dc2626);
+        }
+        
+        /* 侧边栏样式 */
+        .sidebar {
+            grid-area: sidebar;
+            background: rgba(30, 30, 46, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .btn-new {
+            background: rgba(108, 99, 255, 0.2);
+            color: var(--primary);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-new:hover {
+            background: rgba(108, 99, 255, 0.3);
+        }
+        
+        .file-list {
+            list-style: none;
+            overflow-y: auto;
+            flex-grow: 1;
+            max-height: 400px;
+        }
+        
+        .file-item {
+            padding: 12px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .file-item:hover {
+            background: rgba(108, 99, 255, 0.1);
+        }
+        
+        .file-item.active {
+            background: rgba(108, 99, 255, 0.2);
+            color: var(--primary);
+        }
+        
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .file-info span {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .file-item i {
+            color: var(--primary);
+        }
+        
+        .file-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .file-action-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .file-action-btn:hover {
+            color: var(--light);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .delete-btn:hover {
+            color: var(--error);
+        }
+        
+        /* 编辑器样式 */
+        .editor-container {
+            grid-area: editor;
+            background: var(--code-bg);
+            border-radius: 15px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+        }
+        
+        .editor-header {
+            padding: 15px 20px;
+            background: rgba(30, 30, 30, 0.8);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .filename {
+            font-size: 16px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .filename i {
+            color: var(--primary);
+        }
+        
+        .editor-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .editor-actions button {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: var(--light);
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .editor-actions button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        #editor {
+            flex-grow: 1;
+            font-size: 16px;
+            padding: 20px;
+            outline: none;
+            border: none;
+            resize: none;
+            background: var(--code-bg);
+            color: #d4d4d4;
+            font-family: 'Fira Code', monospace;
+            line-height: 1.6;
+            tab-size: 4;
+        }
+        
+        /* 终端样式 */
+        .terminal {
+            grid-area: terminal;
+            background: var(--terminal-bg);
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .terminal-header {
+            padding: 15px 20px;
+            background: rgba(30, 30, 30, 0.8);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .terminal-header h3 {
+            font-size: 16px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .terminal-header i {
+            color: var(--primary);
+        }
+        
+        #output {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #f0f0f0;
+            white-space: pre-wrap;
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+        
+        .status {
+            padding: 10px 20px;
+            background: rgba(30, 30, 30, 0.8);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+        
+        .status.ready .status-indicator {
+            background: var(--success);
+        }
+        
+        .status.running .status-indicator {
+            background: var(--warning);
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+        
+        /* 加载指示器 */
+        .loader {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+        }
+        
+        .loader-content {
+            text-align: center;
+            max-width: 500px;
+            padding: 20px;
+        }
+        
+        .loader h2 {
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+        
+        .loader p {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+        
+        .progress-bar {
+            width: 80%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px auto;
+        }
+        
+        .progress {
+            height: 100%;
+            background: var(--purple-gradient);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .pyodide-info {
+            background: rgba(108, 99, 255, 0.1);
+            border-left: 3px solid var(--primary);
+            padding: 10px;
+            margin-top: 20px;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: 70px auto 1fr 300px;
+                grid-template-areas: 
+                    "header"
+                    "sidebar"
+                    "editor"
+                    "terminal";
+            }
+            
+            .sidebar {
+                max-height: 250px;
+            }
+        }
+        
+        /* 文件上传按钮隐藏 */
+        #file-upload {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-code"></i>
+                <h1>PyCodePlay</h1>
+            </div>
+            <div class="controls">
+                <button class="btn btn-run" id="run-btn">
+                    <i class="fas fa-play"></i> 运行代码
+                </button>
+                <button class="btn" id="download-btn">
+                    <i class="fas fa-download"></i> 下载文件
+                </button>
+            </div>
+        </header>
+        
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>文件管理器</h2>
+                <button class="btn-new" id="new-file-btn">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <ul class="file-list" id="file-list">
+                <!-- 文件列表由JS动态生成 -->
+            </ul>
+            <button class="btn" id="upload-btn" style="margin-top: auto;">
+                <i class="fas fa-upload"></i> 上传文件
+            </button>
+            <input type="file" id="file-upload" accept=".py">
+        </aside>
+        
+        <section class="editor-container">
+            <div class="loader" id="loader">
+                <div class="loader-content">
+                    <h2><i class="fas fa-spinner fa-spin"></i> 正在加载 Pyodide 环境</h2>
+                    <div class="progress-bar">
+                        <div class="progress" id="progress"></div>
+                    </div>
+                    <p>Pyodide 正在初始化中，第一次加载可能需要一些时间...</p>
+                    <div class="pyodide-info">
+                        <p><strong>为什么加载时间较长？</strong></p>
+                        <p>Pyodide 将完整的 Python 解释器和科学计算库编译为 WebAssembly，首次加载需要下载约 8MB 的核心文件。</p>
+                        <p>加载完成后，后续使用将非常快速（浏览器会缓存文件）。</p>
+                    </div>
+                </div>
+            </div>
+            <div class="editor-header">
+                <div class="filename">
+                    <i class="fas fa-file-code"></i>
+                    <span id="current-filename">main.py</span>
+                </div>
+                <div class="editor-actions">
+                    <button id="save-btn" title="保存">
+                        <i class="fas fa-save"></i>
+                    </button>
+                </div>
+            </div>
+            <textarea id="editor" spellcheck="false"></textarea>
+        </section>
+        
+        <section class="terminal">
+            <div class="terminal-header">
+                <h3><i class="fas fa-terminal"></i> 输出控制台</h3>
+                <button class="btn btn-delete" id="clear-btn" style="padding: 5px 10px; font-size: 13px;">
+                    <i class="fas fa-trash"></i> 清空控制台
+                </button>
+            </div>
+            <div id="output">
+                <div class="welcome-message">
+                    <p>Pyodide 正在初始化...</p>
+                    <p>控制台输出将显示在这里</p>
+                </div>
+            </div>
+            <div class="status" id="status">
+                <div class="status-indicator"></div>
+                <span>初始化中...</span>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // 文件管理
+        const fileList = document.getElementById('file-list');
+        const currentFilename = document.getElementById('current-filename');
+        const editor = document.getElementById('editor');
+        const output = document.getElementById('output');
+        const status = document.getElementById('status');
+        const fileUpload = document.getElementById('file-upload');
+        const loader = document.getElementById('loader');
+        const progressBar = document.getElementById('progress');
+        
+        // 初始化文件系统（使用localStorage存储）
+        let files = JSON.parse(localStorage.getItem('pycodeplay_files')) || {};
+        
+        // 如果没有任何文件，创建一个空的main.py
+        if (Object.keys(files).length === 0) {
+            files = {
+                'main.py': ''
+            };
+            localStorage.setItem('pycodeplay_files', JSON.stringify(files));
+        }
+        
+        let currentFile = Object.keys(files)[0]; // 默认第一个文件
+        
+        // 初始化文件列表
+        function initFileList() {
+            fileList.innerHTML = '';
+            Object.keys(files).forEach(filename => {
+                const isActive = filename === currentFile;
+                const fileItem = document.createElement('li');
+                fileItem.className = `file-item ${isActive ? 'active' : ''}`;
+                fileItem.dataset.filename = filename;
+                fileItem.innerHTML = `
+                    <div class="file-info">
+                        <i class="fas fa-file-code"></i>
+                        <span>${filename}</span>
+                    </div>
+                    <div class="file-actions">
+                        <button class="file-action-btn delete-btn" title="删除文件">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                
+                // 文件切换
+                fileItem.querySelector('.file-info').addEventListener('click', () => {
+                    // 保存当前文件内容
+                    files[currentFile] = editor.value;
+                    localStorage.setItem('pycodeplay_files', JSON.stringify(files));
+                    
+                    // 切换到新文件
+                    currentFile = filename;
+                    currentFilename.textContent = currentFile;
+                    editor.value = files[filename];
+                    
+                    // 更新激活状态
+                    document.querySelectorAll('.file-item').forEach(item => {
+                        item.classList.remove('active');
+                    });
+                    fileItem.classList.add('active');
+                });
+                
+                // 删除文件
+                const deleteBtn = fileItem.querySelector('.delete-btn');
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    
+                    if (Object.keys(files).length <= 1) {
+                        showOutput('error', '不能删除最后一个文件');
+                        return;
+                    }
+                    
+                    if (confirm(`确定要删除文件 "${filename}" 吗？`)) {
+                        delete files[filename];
+                        localStorage.setItem('pycodeplay_files', JSON.stringify(files));
+                        
+                        // 如果删除的是当前文件，切换到第一个文件
+                        if (currentFile === filename) {
+                            currentFile = Object.keys(files)[0];
+                            editor.value = files[currentFile];
+                            currentFilename.textContent = currentFile;
+                        }
+                        
+                        initFileList();
+                        showOutput('success', `文件 "${filename}" 已删除`);
+                    }
+                });
+                
+                fileList.appendChild(fileItem);
+            });
+            
+            // 设置编辑器内容
+            editor.value = files[currentFile];
+            currentFilename.textContent = currentFile;
+        }
+        
+        // 初始化文件系统
+        initFileList();
+        
+        // 新建文件
+        document.getElementById('new-file-btn').addEventListener('click', () => {
+            let fileNumber = 1;
+            let newFilename = `script_${fileNumber}.py`;
+            
+            while (files[newFilename]) {
+                fileNumber++;
+                newFilename = `script_${fileNumber}.py`;
+            }
+            
+            files[newFilename] = `# ${newFilename}\n# 新创建的Python文件`;
+            localStorage.setItem('pycodeplay_files', JSON.stringify(files));
+            currentFile = newFilename;
+            currentFilename.textContent = currentFile;
+            editor.value = files[newFilename];
+            
+            initFileList();
+            showOutput('success', `已创建新文件: ${newFilename}`);
+        });
+        
+        // 上传文件
+        document.getElementById('upload-btn').addEventListener('click', () => {
+            fileUpload.click();
+        });
+        
+        fileUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file || !file.name.endsWith('.py')) {
+                showOutput('error', '请选择.py文件');
+                return;
+            }
+            
+            // 检查文件是否已存在
+            if (files[file.name]) {
+                if (!confirm(`文件 "${file.name}" 已存在，要覆盖它吗？`)) {
+                    return;
+                }
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                files[file.name] = event.target.result;
+                localStorage.setItem('pycodeplay_files', JSON.stringify(files));
+                currentFile = file.name;
+                currentFilename.textContent = currentFile;
+                editor.value = files[file.name];
+                
+                initFileList();
+                showOutput('success', `已上传文件: ${file.name}`);
+            };
+            reader.readAsText(file);
+        });
+        
+        // 下载文件
+        document.getElementById('download-btn').addEventListener('click', () => {
+            const content = editor.value;
+            const blob = new Blob([content], { type: 'text/x-python' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = currentFile;
+            document.body.appendChild(a);
+            a.click();
+            
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+            
+            showOutput('success', `已下载文件: ${currentFile}`);
+        });
+        
+        // 保存文件
+        document.getElementById('save-btn').addEventListener('click', () => {
+            files[currentFile] = editor.value;
+            localStorage.setItem('pycodeplay_files', JSON.stringify(files));
+            showOutput('success', `${currentFile} 保存成功!`);
+        });
+        
+        // 清空控制台
+        document.getElementById('clear-btn').addEventListener('click', () => {
+            output.innerHTML = '';
+        });
+        
+        // Pyodide初始化
+        let pyodide;
+        
+        async function initializePyodide() {
+            status.innerHTML = `
+                <div class="status-indicator"></div>
+                <span>正在加载Pyodide...</span>
+            `;
+            
+            try {
+                // 模拟进度更新
+                const interval = setInterval(() => {
+                    const currentWidth = parseInt(progressBar.style.width || '0');
+                    const newWidth = Math.min(currentWidth + 5, 95);
+                    progressBar.style.width = `${newWidth}%`;
+                }, 500);
+                
+                pyodide = await loadPyodide({
+                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/",
+                    stdout: showPyodideOutput,
+                    stderr: showPyodideError
+                });
+                
+                clearInterval(interval);
+                progressBar.style.width = '100%';
+                
+                // 添加常用包
+                await pyodide.loadPackage("micropip");
+                
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                    status.className = "status ready";
+                    status.innerHTML = `
+                        <div class="status-indicator"></div>
+                        <span>Pyodide 已加载完成! Python ${pyodide.version}</span>
+                    `;
+                    
+                    showOutput('info', 'Pyodide初始化完成!');
+                    showOutput('info', `Python版本: ${pyodide.version}`);
+                    showOutput('info', '现在可以运行Python代码了');
+                    showOutput('info', '--------------------------------');
+                }, 800);
+            } catch (error) {
+                loader.querySelector('.loader-content h2').innerHTML = `<i class="fas fa-exclamation-triangle"></i> 加载失败`;
+                loader.querySelector('.loader-content p').textContent = `错误: ${error.message}`;
+                status.className = "status";
+                status.innerHTML = `
+                    <div class="status-indicator" style="background:var(--error)"></div>
+                    <span>加载失败: ${error.message}</span>
+                `;
+                
+                showOutput('error', `Pyodide加载失败: ${error.message}`);
+            }
+        }
+        
+        // 显示Pyodide输出
+        function showPyodideOutput(text) {
+            showOutput('info', text);
+        }
+        
+        // 显示Pyodide错误
+        function showPyodideError(text) {
+            showOutput('error', text);
+        }
+        
+        // 运行Python代码
+        document.getElementById('run-btn').addEventListener('click', async () => {
+            if (!pyodide) {
+                showOutput('error', 'Pyodide尚未加载完成，请稍后再试');
+                return;
+            }
+            
+            const code = editor.value;
+            if (!code.trim()) {
+                showOutput('warning', '编辑器中没有代码可运行');
+                return;
+            }
+            
+            // 保存当前文件内容
+            files[currentFile] = code;
+            localStorage.setItem('pycodeplay_files', JSON.stringify(files));
+            
+            status.className = "status running";
+            status.innerHTML = `
+                <div class="status-indicator"></div>
+                <span>代码运行中...</span>
+            `;
+            
+            showOutput('info', `正在运行 ${currentFile}...`);
+            showOutput('info', '--------------------------------');
+            
+            try {
+                // 运行代码
+                await pyodide.runPythonAsync(code);
+                
+                status.className = "status ready";
+                status.innerHTML = `
+                    <div class="status-indicator"></div>
+                    <span>运行完成!</span>
+                `;
+            } catch (error) {
+                status.className = "status";
+                status.innerHTML = `
+                    <div class="status-indicator" style="background:var(--error)"></div>
+                    <span>运行错误</span>
+                `;
+                
+                showOutput('error', error.toString());
+            }
+        });
+        
+        // 显示输出
+        function showOutput(type, message) {
+            const line = document.createElement('div');
+            
+            switch (type) {
+                case 'error':
+                    line.style.color = 'var(--error)';
+                    break;
+                case 'warning':
+                    line.style.color = 'var(--warning)';
+                    break;
+                case 'success':
+                    line.style.color = 'var(--success)';
+                    break;
+                case 'info':
+                    line.style.color = '#94a3b8';
+                    break;
+                default:
+                    line.style.color = 'var(--light)';
+            }
+            
+            line.textContent = message;
+            output.appendChild(line);
+            
+            // 自动滚动到底部
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        // 初始化应用
+        window.addEventListener('load', () => {
+            // 设置初始编辑器内容
+            editor.value = files[currentFile] || '';
+            
+            // 初始化文件列表
+            initFileList();
+            
+            // 初始化Pyodide
+            initializePyodide();
+        });
+    </script>
+</body>
+</html>
