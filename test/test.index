@@ -1,1 +1,13 @@
-<audio><source src="https://hyy-1333784975.cos.ap-nanjing.myqcloud.com/又活了一天.mp3">你的浏览器不支持音频</audio>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>音乐播放</title>
+</head>
+<body>
+  <audio controls>
+    <!-- 直接使用文件URL（注意中文字符需编码） -->
+    <source src="https://hyy-1333784975.cos.ap-hongkong.myqcloud.com/%E5%8F%88%E6%B4%BB%E4%BA%86%E4%B8%80%E5%A4%A9.mp3" type="audio/mpeg">
+    您的浏览器不支持音频播放
+  </audio>
+</body>
+</html>
